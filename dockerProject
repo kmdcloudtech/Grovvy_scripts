@@ -1,0 +1,38 @@
+node{
+    stage("pull source code from Github"){
+        git branch: 'main', url: 'https://github.com/kmdcloudtech/dockerProject.git'
+    }
+
+    stage("Build Docker File"){
+        sh 'sudo docker image build -t $JOB_NAME:v1.$BUILD_ID .'
+        sh 'sudo docker image tag $JOB_NAME:v1.$BUILD_ID kmdcloudtech/$JOB_NAME:v1.$BUILD_ID'
+        sh 'sudo docker image tag $JOB_NAME:v1.$BUILD_ID kmdcloudtech/$JOB_NAME:latest'
+    }
+    
+    stage("Push Image to Docker HUB"){
+        withCredentials([string(credentialsId: 'dockerhubpassword', variable: 'dockerhubpassword')]) {
+            // some block
+            sh 'sudo docker login -u kmdcloudtech -p ${dockerhubpassword}'
+            sh 'sudo docker image push kmdcloudtech/$JOB_NAME:v1.$BUILD_ID'
+            sh 'sudo docker image push kmdcloudtech/$JOB_NAME:latest'
+            sh 'sudo docker image rmi $JOB_NAME:v1.$BUILD_ID kmdcloudtech/$JOB_NAME:v1.$BUILD_ID kmdcloudtech/$JOB_NAME:latest'
+        }
+    }
+    stage("create a container"){
+        sh 'sudo docker run -itd --name c01 -p 3601:80 kmdcloudtech/web'   # (web=job name)
+    }
+}
+
+/* 
+steps:
+1. install git and docker in jenkins server 
+2. start and enable docker services 
+3. give jenkins user sudo privilleges in visudo file 
+root    ALL=(ALL)       ALL
+jenkins ALL=(ALL) NOPASSWD: ALL
+4. docker login 
+save dockerhub login password in "withcredentials:Bind credentials to variables 
+choose sercret text 
+ADD 
+Generate Pipeline syntax 
+
